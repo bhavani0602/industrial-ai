@@ -1,0 +1,21 @@
+[project]
+name = "industrial-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Maddy0057", email = "shivakumarbca97@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
+    "scikit-learn>=1.7.2",
+]
+
+[project.scripts]
+industrial-ai = "industrial_ai:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
