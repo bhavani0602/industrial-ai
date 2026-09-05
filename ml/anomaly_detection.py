@@ -8,7 +8,7 @@ that step is already done.
 import pandas as pd
 import numpy as np
 
-def load_cleaned_data(path="data/ai4i2020_cleaned.csv"):
+def load_cleaned_data(path="../data/ai4i2020_cleaned.csv"):
     df = pd.read_csv(path)
     return df
 
@@ -37,7 +37,7 @@ def detect_anomaly(df: pd.DataFrame, z_threshold: float = 2.5) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    df = load_cleaned_data("data/ai4i2020_cleaned.csv")
+    df = load_cleaned_data("../data/ai4i2020_cleaned.csv")
     print("Loaded:", df.shape)
     print(df.columns.tolist())
 
