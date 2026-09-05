@@ -80,7 +80,7 @@ def save_model(model, path: str = "data/failure_model.pkl"):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/ai4i2020_cleaned.csv")
+    df = pd.read_csv("../data/ai4i2020_cleaned.csv")
 
     model, X_test, y_test = train_failure_model(df)
     print("=== Model Evaluation ===")
