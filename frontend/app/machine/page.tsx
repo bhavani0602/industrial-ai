@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import MachineHealthBadge from "../components/machine-health-badge";
 
 const sensorData = [
     {
@@ -169,8 +170,8 @@ export default function MachineDetails() {
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`px-6 py-4 text-sm font-medium transition ${activeTab === tab
-                                        ? "border-b-2 border-blue-600 text-blue-600"
-                                        : "text-slate-500 hover:text-slate-900"
+                                    ? "border-b-2 border-blue-600 text-blue-600"
+                                    : "text-slate-500 hover:text-slate-900"
                                     }`}
                             >
                                 {tab}
@@ -222,10 +223,10 @@ export default function MachineDetails() {
 
                                             <span
                                                 className={`rounded-full px-2 py-1 text-xs font-medium ${sensor.status === "Critical"
-                                                        ? "bg-red-100 text-red-600"
-                                                        : sensor.status === "High"
-                                                            ? "bg-yellow-100 text-yellow-700"
-                                                            : "bg-green-100 text-green-600"
+                                                    ? "bg-red-100 text-red-600"
+                                                    : sensor.status === "High"
+                                                        ? "bg-yellow-100 text-yellow-700"
+                                                        : "bg-green-100 text-green-600"
                                                     }`}
                                             >
                                                 {sensor.status}
@@ -374,12 +375,8 @@ export default function MachineDetails() {
                                     Current machine condition
                                 </p>
 
-
-                                {/* HEALTH SCORE */}
-                                <div className="mt-6 flex items-center justify-center">
-
+                                <div className="mt-6 flex flex-col items-center justify-center">
                                     <div className="flex h-40 w-40 flex-col items-center justify-center rounded-full border-[12px] border-red-500">
-
                                         <span className="text-4xl font-bold">
                                             38%
                                         </span>
@@ -387,9 +384,11 @@ export default function MachineDetails() {
                                         <span className="text-xs text-red-500">
                                             Health Score
                                         </span>
-
                                     </div>
 
+                                    <div className="mt-4">
+                                        <MachineHealthBadge score={38} />
+                                    </div>
                                 </div>
 
 
@@ -644,10 +643,10 @@ export default function MachineDetails() {
 
                                                 <span
                                                     className={`rounded-full px-3 py-1 text-xs font-medium ${sensor.status === "Critical"
-                                                            ? "bg-red-100 text-red-600"
-                                                            : sensor.status === "High"
-                                                                ? "bg-yellow-100 text-yellow-700"
-                                                                : "bg-green-100 text-green-600"
+                                                        ? "bg-red-100 text-red-600"
+                                                        : sensor.status === "High"
+                                                            ? "bg-yellow-100 text-yellow-700"
+                                                            : "bg-green-100 text-green-600"
                                                         }`}
                                                 >
                                                     {sensor.status}
