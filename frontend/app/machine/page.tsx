@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState } from "react";
 import MachineHealthBadge from "../components/machine-health-badge";
 
@@ -579,10 +581,15 @@ export default function MachineDetails() {
 
                                 </div>
 
-
-                                <button className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+                                <Link
+                                    href="/prediction"
+                                    className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white"
+                                >
                                     View Full AI Prediction
-                                </button>
+                                </Link>
+
+
+
 
                             </section>
 
