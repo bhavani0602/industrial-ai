@@ -8,6 +8,8 @@ import {
   Activity,
   Settings,
   Factory,
+  BrainCircuit,
+  AlertTriangle,
 } from "lucide-react";
 
 const navItems = [
@@ -17,15 +19,25 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
+    label: "Equipments",
+    href: "/machine",
+    icon: Factory,
+  },
+  {
+    label: "Failure Prediction",
+    href: "/prediction",
+    icon: BrainCircuit,
+  },
+  {
     label: "Maintenance",
     href: "/maintenance",
     icon: Wrench,
   },
   {
-    label: "Machine Details",
-    href: "/machine",
-    icon: Factory,
-  },
+    label: "Anomaly Detection",
+    href: "/anomaly",
+    icon: AlertTriangle,
+  }
 ];
 
 export default function Sidebar() {
