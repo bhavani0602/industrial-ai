@@ -11,8 +11,21 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/maintenance", label: "Maintenance", icon: Wrench },
+  {
+    label: "Dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Maintenance",
+    href: "/maintenance",
+    icon: Wrench,
+  },
+  {
+    label: "Machine Details",
+    href: "/machine",
+    icon: Factory,
+  },
 ];
 
 export default function Sidebar() {
@@ -41,11 +54,10 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-blue-600/15 text-blue-400"
-                  : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-              }`}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
+                ? "bg-blue-600/15 text-blue-400"
+                : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+                }`}
             >
               <item.icon className="h-[18px] w-[18px]" />
               {item.label}

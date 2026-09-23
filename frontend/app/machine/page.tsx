@@ -74,9 +74,15 @@ export default function MachineDetails() {
                             </h1>
                         </div>
 
-                        <button className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
-                            ← Back to Machines
-                        </button>
+                        <div className="flex gap-3">
+                            <button className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
+                                ← Back to Machines
+                            </button>
+
+                            <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                                + Add More
+                            </button>
+                        </div>
                     </div>
 
                 </div>

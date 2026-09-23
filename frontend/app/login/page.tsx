@@ -6,7 +6,7 @@ export default function Home() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <main className="min-h-screen relative flex items-center justify-center overflow-hidden bg-slate-950">
+    <main className="w-full min-h-screen relative flex items-center justify-center overflow-hidden bg-slate-950">
 
       {/* Background image */}
       <div
