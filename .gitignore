@@ -11,3 +11,8 @@ wheels/
 
 # Environment variables
 .env
+
+# Personal documentation files (Do not push)
+Database_Segment_Overview.md
+Full_MVP_Architecture.md
+Project_Presentation_Guide.md

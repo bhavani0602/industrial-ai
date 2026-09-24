@@ -56,3 +56,27 @@ class PredictionOut(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+# ---- Anomaly ----
+class AnomalyOut(BaseModel):
+    id: int
+    machine_id: int
+    anomaly_score: float
+    anomaly_type: str
+    description: str
+    detected_at: datetime
+    status: str
+    class Config:
+        from_attributes = True
+
+# ---- Recommendation ----
+class RecommendationOut(BaseModel):
+    id: int
+    machine_id: int
+    prediction_id: Optional[int] = None
+    recommendation: str
+    priority: str
+    status: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
