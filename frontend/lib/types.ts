@@ -1,13 +1,17 @@
+<<<<<<< HEAD
 // Shared TypeScript interfaces — mirrors database/models.py
+=======
+// Shared TypeScript interfaces — mirrors database/models.py + dashboard UI
+>>>>>>> main
 
 export interface Machine {
   id: number;
   machine_name: string;
-  machine_type: "L" | "M" | "H"; // Low / Medium / High quality
+  machine_type: "L" | "M" | "H";
   location?: string;
   status: "Active" | "Idle" | "Under Maintenance" | "Offline";
   installation_date?: string;
-  health_score: number; // 0-100, derived from ML predictions
+  health_score: number;
 }
 
 export interface SensorReading {
@@ -35,7 +39,7 @@ export interface Prediction {
 export interface Anomaly {
   id: number;
   machine_id: number;
-  machine_name: string; // denormalised for display
+  machine_name: string;
   anomaly_score: number;
   anomaly_type: string;
   description: string;
@@ -46,7 +50,7 @@ export interface Anomaly {
 export interface MaintenanceRecord {
   id: number;
   machine_id: number;
-  machine_name: string; // denormalised for display
+  machine_name: string;
   maintenance_type: string;
   description: string;
   technician: string;
@@ -65,7 +69,6 @@ export interface Recommendation {
   created_at: string;
 }
 
-// Chart-friendly time-series point
 export interface SensorTimePoint {
   time: string;
   air_temperature: number;
@@ -74,4 +77,62 @@ export interface SensorTimePoint {
   torque: number;
   tool_wear: number;
   power_consumption: number;
+}
+
+// ── Dashboard-specific types ──────────────────────────────────────
+
+export interface EquipmentHealthSlice {
+  name: string;
+  value: number;
+  percentage: string;
+  color: string;
+}
+
+export interface PredictedFailure {
+  id: number;
+  equipment: string;
+  failureProbability: number;
+  predictedIn: string;
+  risk: "High" | "Medium" | "Low";
+}
+
+export interface AlertItem {
+  id: number;
+  message: string;
+  time: string;
+  severity: "critical" | "warning" | "info";
+}
+
+export interface SensorAnomalyPoint {
+  time: string;
+  actual: number;
+  threshold: number;
+}
+
+export interface FailureTrendPoint {
+  date: string;
+  probability: number;
+}
+
+export interface AnomalyByEquipment {
+  type: string;
+  count: number;
+  color: string;
+}
+
+export interface RecommendedAction {
+  id: number;
+  title: string;
+  description: string;
+  severity: "critical" | "warning" | "info";
+  actionLabel: string;
+}
+
+export interface CalendarItem {
+  id: number;
+  month: string;
+  day: number;
+  title: string;
+  description: string;
+  tag: "Today" | "Upcoming";
 }

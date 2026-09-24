@@ -93,31 +93,36 @@ export default function MaintenancePage() {
           title="Total Records"
           value={kpis.total}
           icon={ClipboardList}
-          color="zinc"
+          iconBg="bg-zinc-100"
+          iconColor="text-zinc-600"
         />
         <StatCard
           title="Scheduled"
           value={kpis.scheduled}
           icon={CalendarClock}
-          color="blue"
+          iconBg="bg-blue-100"
+          iconColor="text-blue-600"
         />
         <StatCard
           title="In Progress"
           value={kpis.inProgress}
           icon={Loader2}
-          color="amber"
+          iconBg="bg-amber-100"
+          iconColor="text-amber-600"
         />
         <StatCard
           title="Completed"
           value={kpis.completed}
           icon={CheckCircle2}
-          color="green"
+          iconBg="bg-emerald-100"
+          iconColor="text-emerald-600"
         />
         <StatCard
           title="Overdue"
           value={kpis.overdue}
           icon={AlertOctagon}
-          color="red"
+          iconBg="bg-red-100"
+          iconColor="text-red-600"
         />
       </div>
 

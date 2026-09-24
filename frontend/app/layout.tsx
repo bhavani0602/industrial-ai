@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import LayoutShell from "./components/layout-shell";
+import TopBar from "./components/top-bar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Industrial AI — Maintenance Dashboard",
+  title: "PredictAI — Industrial Maintenance Dashboard",
   description:
     "AI-powered predictive maintenance and process optimization system",
 };
