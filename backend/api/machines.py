@@ -15,8 +15,8 @@ def create_machine(machine: schemas.MachineCreate, db: Session = Depends(get_db)
     return new_machine
 
 @router.get("/", response_model=list[schemas.MachineOut])
-def list_machines(db: Session = Depends(get_db)):
-    return db.query(Machine).all()
+def list_machines(skip: int = 0, limit: int = 10000, db: Session = Depends(get_db)):
+    return db.query(Machine).offset(skip).limit(limit).all()
 
 @router.get("/{machine_id}", response_model=schemas.MachineOut)
 def get_machine(machine_id: int, db: Session = Depends(get_db)):

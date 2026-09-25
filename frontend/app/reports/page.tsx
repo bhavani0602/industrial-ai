@@ -20,7 +20,10 @@ export default function ReportsPage() {
           </h1>
           <p className="mt-1 text-sm text-zinc-500">Download and view historical maintenance and AI performance reports.</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+        <button 
+          onClick={() => alert("Connecting to reporting engine...\n\nGenerating new custom report for the current month. This may take a few seconds in production.")}
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+        >
           <Calendar className="h-4 w-4" /> Generate New Report
         </button>
       </div>
@@ -35,7 +38,10 @@ export default function ReportsPage() {
               <h3 className="font-bold text-zinc-900 line-clamp-2">{report.name}</h3>
               <p className="mt-2 text-xs text-zinc-500">{report.date} • {report.size}</p>
             </div>
-            <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900">
+            <button 
+              onClick={() => alert(`Downloading ${report.name} as ${report.type} format...\n\n(Check your downloads folder in the full version)`)}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+            >
               <Download className="h-4 w-4" /> Download {report.type}
             </button>
           </div>

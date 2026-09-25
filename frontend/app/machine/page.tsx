@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import MachineHealthBadge from "../components/machine-health-badge";
 
 const sensorData = [
@@ -72,9 +73,9 @@ export default function MachineDetails() {
                             </h1>
                         </div>
 
-                        <button className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
+                        <Link href="/equipment" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
                             ← Back to Machines
-                        </button>
+                        </Link>
                     </div>
 
                 </div>

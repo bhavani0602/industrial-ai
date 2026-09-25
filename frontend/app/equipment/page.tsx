@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { useEffect, useState } from "react";
 import { Server, Activity, Power, AlertTriangle, ShieldCheck } from "lucide-react";
@@ -71,7 +72,7 @@ export default function EquipmentPage() {
             <div>
               <p className="text-sm font-medium text-zinc-500">Active</p>
               <h3 className="text-2xl font-bold text-zinc-900">
-                {machines.filter((m) => m.status === "active").length}
+                {machines.filter((m) => m.status && m.status.toLowerCase().includes("active")).length}
               </h3>
             </div>
           </div>
@@ -84,7 +85,7 @@ export default function EquipmentPage() {
             <div>
               <p className="text-sm font-medium text-zinc-500">Inactive / Maint.</p>
               <h3 className="text-2xl font-bold text-zinc-900">
-                {machines.filter((m) => m.status !== "active").length}
+                {machines.filter((m) => !m.status || !m.status.toLowerCase().includes("active")).length}
               </h3>
             </div>
           </div>
@@ -139,14 +140,14 @@ export default function EquipmentPage() {
                     <td className="px-5 py-3">
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
-                          machine.status === "active"
+                          machine.status.toLowerCase() === "active"
                             ? "bg-emerald-50 text-emerald-700"
                             : "bg-red-50 text-red-700"
                         }`}
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
-                            machine.status === "active"
+                            machine.status.toLowerCase() === "active"
                               ? "bg-emerald-500"
                               : "bg-red-500"
                           }`}
@@ -155,9 +156,12 @@ export default function EquipmentPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <button className="text-xs font-medium text-blue-600 hover:underline">
+                      <Link 
+                        href="/machine"
+                        className="text-xs font-medium text-blue-600 hover:underline"
+                      >
                         View Details
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))

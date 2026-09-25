@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Settings,
   AlertTriangle,
@@ -31,16 +32,7 @@ import {
   Bar,
 } from "recharts";
 import StatCard from "./components/stat-card";
-import {
-  equipmentHealth,
-  predictedFailures,
-  alertItems,
-  sensorAnomalyData,
-  failureTrendData,
-  anomaliesByEquipment,
-  recommendedActions,
-  calendarItems,
-} from "@/lib/mock-data";
+
 
 // ── Risk badge colors ────────────────────────────────────────────
 const riskColors: Record<string, string> = {
@@ -61,6 +53,32 @@ const sensorTabs = ["Vibration", "Temperature", "Pressure", "Flow Rate"];
 
 export default function DashboardPage() {
   const [activeSensorTab, setActiveSensorTab] = useState("Vibration");
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dropdownMachines, setDropdownMachines] = useState<any[]>([]);
+  const [selectedMachine, setSelectedMachine] = useState<number>(1);
+
+  useEffect(() => {
+    const fetchData = () => {
+      fetch(`http://127.0.0.1:8000/api/dashboard/summary?machine_id=${selectedMachine}`)
+        .then((res) => res.json())
+        .then((data) => setDashboardData(data))
+        .catch((err) => console.error("Error fetching dashboard data:", err));
+
+      fetch("http://127.0.0.1:8000/api/machines?limit=10")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setDropdownMachines(data);
+          }
+        })
+        .catch((err) => console.error("Error fetching machines:", err));
+    };
+
+    fetchData(); // Fetch immediately
+    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, [selectedMachine]);
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-IN", {
@@ -75,7 +93,14 @@ export default function DashboardPage() {
     hour12: true,
   });
 
-  const totalEquipment = equipmentHealth.reduce((s, e) => s + e.value, 0);
+  const realTotalEquipment = dashboardData ? dashboardData.stats.total_machines : 0;
+
+  const realEquipmentHealth = dashboardData ? [
+    { name: "Healthy", value: dashboardData.health_status.healthy, percentage: `${Math.round((dashboardData.health_status.healthy / realTotalEquipment) * 100) || 0}%`, color: "#22c55e" },
+    { name: "Warning", value: dashboardData.health_status.warning, percentage: `${Math.round((dashboardData.health_status.warning / realTotalEquipment) * 100) || 0}%`, color: "#f59e0b" },
+    { name: "Critical", value: dashboardData.health_status.critical, percentage: `${Math.round((dashboardData.health_status.critical / realTotalEquipment) * 100) || 0}%`, color: "#ef4444" },
+    { name: "Offline", value: dashboardData.health_status.offline, percentage: `${Math.round((dashboardData.health_status.offline / realTotalEquipment) * 100) || 0}%`, color: "#94a3b8" },
+  ] : [];
 
   return (
     <div className="space-y-5 p-6">
@@ -91,12 +116,13 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-4 text-sm text-zinc-500">
-          <button className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm">
-            Chennai Plant
-            <ChevronDown className="h-4 w-4" />
-          </button>
-          <span>{dateStr}</span>
-          <span className="font-medium text-zinc-700">{timeStr}</span>
+          <select className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm focus:outline-none">
+            <option>Chennai Plant</option>
+            <option>Mumbai Plant</option>
+            <option>Delhi Plant</option>
+          </select>
+          <span suppressHydrationWarning>{dateStr}</span>
+          <span suppressHydrationWarning className="font-medium text-zinc-700">{timeStr}</span>
         </div>
       </div>
 
@@ -104,7 +130,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total Equipment"
-          value={48}
+          value={dashboardData ? dashboardData.stats.total_machines : "..."}
           icon={Settings}
           trendValue="↑ 12%"
           trendPositive
@@ -114,7 +140,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Active Anomalies"
-          value={5}
+          value={dashboardData ? dashboardData.stats.active_anomalies : "..."}
           icon={AlertTriangle}
           trendValue="↑ 150%"
           trendPositive={false}
@@ -124,7 +150,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Predicted Failures"
-          value={3}
+          value={dashboardData ? dashboardData.stats.predicted_failures : "..."}
           icon={ShieldAlert}
           trendValue="↑ 50%"
           trendPositive={false}
@@ -134,7 +160,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Uptime"
-          value="98.6%"
+          value={dashboardData ? `${dashboardData.stats.uptime_percentage}%` : "..."}
           icon={CheckCircle}
           trendValue="↑ 2.4%"
           trendPositive
@@ -152,9 +178,9 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-zinc-800">
               Equipment Health Status
             </h2>
-            <button className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:underline">
+            <Link href="/equipment" className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:underline">
               View All <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            </Link>
           </div>
           <div className="mt-4 flex items-center gap-6">
             {/* Donut Chart */}
@@ -162,7 +188,7 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={equipmentHealth}
+                    data={realEquipmentHealth}
                     innerRadius={52}
                     outerRadius={75}
                     dataKey="value"
@@ -170,7 +196,7 @@ export default function DashboardPage() {
                     startAngle={90}
                     endAngle={-270}
                   >
-                    {equipmentHealth.map((entry, i) => (
+                    {realEquipmentHealth.map((entry: any, i: number) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
@@ -178,14 +204,14 @@ export default function DashboardPage() {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold text-zinc-900">
-                  {totalEquipment}
+                  {realTotalEquipment}
                 </span>
                 <span className="text-[11px] text-zinc-500">Equipment</span>
               </div>
             </div>
             {/* Legend */}
             <div className="space-y-2.5">
-              {equipmentHealth.map((item) => (
+              {realEquipmentHealth.map((item: any) => (
                 <div key={item.name} className="flex items-center gap-2.5">
                   <span
                     className="h-3 w-3 rounded-full"
@@ -207,9 +233,9 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-zinc-800">
               AI Predicted Failures (Next 7 Days)
             </h2>
-            <button className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:underline">
+            <Link href="/failure-prediction" className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:underline">
               View All <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            </Link>
           </div>
           <table className="mt-3 w-full text-sm">
             <thead>
@@ -221,40 +247,48 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {predictedFailures.map((pf) => (
-                <tr key={pf.id} className="border-t border-zinc-50">
-                  <td className="py-2 text-zinc-700">{pf.equipment}</td>
-                  <td className="py-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-100">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${pf.failureProbability}%`,
-                            backgroundColor:
-                              pf.failureProbability >= 70
-                                ? "#ef4444"
-                                : pf.failureProbability >= 50
-                                ? "#f59e0b"
-                                : "#22c55e",
-                          }}
-                        />
+              {dashboardData?.predicted_failures_list?.length > 0 ? (
+                dashboardData.predicted_failures_list.map((pf: any) => (
+                  <tr key={pf.id} className="border-t border-zinc-50">
+                    <td className="py-2 text-zinc-700">{pf.equipment}</td>
+                    <td className="py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-100">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${pf.failureProbability}%`,
+                              backgroundColor:
+                                pf.failureProbability >= 70
+                                  ? "#ef4444"
+                                  : pf.failureProbability >= 50
+                                  ? "#f59e0b"
+                                  : "#22c55e",
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-zinc-700">
+                          {pf.failureProbability}%
+                        </span>
                       </div>
-                      <span className="text-xs font-semibold text-zinc-700">
-                        {pf.failureProbability}%
+                    </td>
+                    <td className="py-2 text-zinc-500">{pf.predictedIn}</td>
+                    <td className="py-2">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${riskColors[pf.risk] || riskColors["Low"]}`}
+                      >
+                        {pf.risk}
                       </span>
-                    </div>
-                  </td>
-                  <td className="py-2 text-zinc-500">{pf.predictedIn}</td>
-                  <td className="py-2">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${riskColors[pf.risk]}`}
-                    >
-                      {pf.risk}
-                    </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="py-4 text-center text-zinc-400">
+                    No predicted failures
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -265,30 +299,36 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-zinc-800">
               Recent Alerts
             </h2>
-            <button className="text-xs font-medium text-blue-600 hover:underline">
+            <Link href="/alerts" className="text-xs font-medium text-blue-600 hover:underline">
               View All
-            </button>
+            </Link>
           </div>
           <div className="mt-3 space-y-3">
-            {alertItems.map((alert) => {
-              const config = severityConfig[alert.severity];
-              const IconComp = config.icon;
-              return (
-                <div key={alert.id} className="flex items-start gap-3">
-                  <div
-                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${config.bg}`}
-                  >
-                    <IconComp className="h-3.5 w-3.5" />
+            {dashboardData?.recent_alerts?.length > 0 ? (
+              dashboardData.recent_alerts.map((alert: any) => {
+                const config = severityConfig[alert.severity.toLowerCase()] || severityConfig.info;
+                const IconComp = config.icon;
+                return (
+                  <div key={alert.id} className="flex items-start gap-3">
+                    <div
+                      className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${config.bg}`}
+                    >
+                      <IconComp className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-zinc-800 leading-snug">
+                        {alert.message}
+                      </p>
+                      <p className="text-[11px] text-zinc-400">{alert.time_ago}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-zinc-800 leading-snug">
-                      {alert.message}
-                    </p>
-                    <p className="text-[11px] text-zinc-400">{alert.time}</p>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="py-4 text-center text-zinc-400">
+                No recent alerts
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -302,12 +342,28 @@ export default function DashboardPage() {
               Sensor Data & Anomaly Detection
             </h2>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-1 rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600">
-                Pump P-101 <ChevronDown className="h-3 w-3" />
-              </button>
-              <button className="flex items-center gap-1 rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600">
-                Last 24 Hours <ChevronDown className="h-3 w-3" />
-              </button>
+              <select 
+                className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 focus:outline-none bg-white"
+                value={selectedMachine}
+                onChange={(e) => setSelectedMachine(Number(e.target.value))}
+              >
+                {dropdownMachines.length > 0 ? (
+                  dropdownMachines.map((m) => (
+                    <option key={m.id} value={m.id}>{m.machine_name}</option>
+                  ))
+                ) : (
+                  <>
+                    <option>Pump P-101</option>
+                    <option>Motor M-204</option>
+                    <option>Compressor C-07</option>
+                  </>
+                )}
+              </select>
+              <select className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 focus:outline-none bg-white">
+                <option>Last 24 Hours</option>
+                <option>Last 7 Days</option>
+                <option>Last 30 Days</option>
+              </select>
             </div>
           </div>
           {/* Tabs */}
@@ -329,7 +385,7 @@ export default function DashboardPage() {
           {/* Chart */}
           <div className="mt-3">
             <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={sensorAnomalyData}>
+              <LineChart data={dashboardData?.sensor_data?.length > 0 ? dashboardData.sensor_data : []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="time"
@@ -341,7 +397,6 @@ export default function DashboardPage() {
                   tick={{ fontSize: 10, fill: "#a1a1aa" }}
                   tickLine={false}
                   axisLine={false}
-                  domain={[0, 25]}
                 />
                 <Tooltip
                   contentStyle={{
@@ -353,24 +408,29 @@ export default function DashboardPage() {
                   }}
                 />
                 <ReferenceLine
-                  y={15}
+                  y={
+                    activeSensorTab === "Vibration" ? 18 :
+                    activeSensorTab === "Temperature" ? 310 :
+                    activeSensorTab === "Pressure" ? 45 :
+                    55
+                  }
                   stroke="#ef4444"
                   strokeDasharray="8 4"
                   strokeWidth={1.5}
                 />
                 <Line
                   type="monotone"
-                  dataKey="actual"
+                  dataKey={activeSensorTab}
                   stroke="#3b82f6"
                   strokeWidth={2}
                   dot={false}
-                  name="Vibration (mm/s)"
+                  name={activeSensorTab}
                 />
               </LineChart>
             </ResponsiveContainer>
             <div className="mt-1 flex items-center gap-4 text-[10px] text-zinc-400">
               <span className="flex items-center gap-1">
-                <span className="inline-block h-0.5 w-4 bg-blue-500" /> Actual
+                <span className="inline-block h-0.5 w-4 bg-blue-500" /> {activeSensorTab} (Actual)
               </span>
               <span className="flex items-center gap-1">
                 <span className="inline-block h-0.5 w-4 border-t-2 border-dashed border-red-500" />{" "}
@@ -386,13 +446,23 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-zinc-800">
               Failure Probability Trend
             </h2>
-            <button className="flex items-center gap-1 rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600">
-              Compressor C-07 <ChevronDown className="h-3 w-3" />
-            </button>
+            <select className="rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 focus:outline-none bg-white">
+              {dropdownMachines.length > 0 ? (
+                dropdownMachines.map((m) => (
+                  <option key={m.id}>{m.machine_name}</option>
+                ))
+              ) : (
+                <>
+                  <option>Compressor C-07</option>
+                  <option>Pump P-101</option>
+                  <option>Heat Exchanger HX-21</option>
+                </>
+              )}
+            </select>
           </div>
           <div className="mt-4">
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={failureTrendData}>
+              <LineChart data={dashboardData?.sensor_data || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="date"
@@ -457,7 +527,7 @@ export default function DashboardPage() {
           <div className="mt-4">
             <ResponsiveContainer width="100%" height={200}>
               <BarChart
-                data={anomaliesByEquipment}
+                data={dashboardData?.anomalies_by_equipment || []}
                 layout="vertical"
                 margin={{ left: 10 }}
               >
@@ -475,7 +545,7 @@ export default function DashboardPage() {
                 />
                 <YAxis
                   type="category"
-                  dataKey="type"
+                  dataKey="name"
                   tick={{ fontSize: 11, fill: "#71717a" }}
                   tickLine={false}
                   axisLine={false}
@@ -491,7 +561,7 @@ export default function DashboardPage() {
                   }}
                 />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={16}>
-                  {anomaliesByEquipment.map((entry, idx) => (
+                  {(dashboardData?.anomalies_by_equipment || []).map((entry: any, idx: number) => (
                     <Cell key={idx} fill={entry.color} />
                   ))}
                 </Bar>
@@ -512,48 +582,45 @@ export default function DashboardPage() {
                 Recommended Actions (AI Insights)
               </h2>
             </div>
-            <button className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:underline">
+            <Link href="/maintenance" className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:underline">
               View All <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            </Link>
           </div>
           <div className="mt-4 space-y-4">
-            {recommendedActions.map((action) => {
-              const IconComp =
-                action.severity === "critical"
-                  ? Wrench
-                  : action.severity === "warning"
-                  ? Search
-                  : Thermometer;
-              const iconBg =
-                action.severity === "critical"
-                  ? "bg-red-100 text-red-600"
-                  : action.severity === "warning"
-                  ? "bg-amber-100 text-amber-600"
-                  : "bg-emerald-100 text-emerald-600";
-              return (
-                <div
-                  key={action.id}
-                  className="flex items-center gap-4 rounded-lg border border-zinc-50 p-3"
-                >
+            {dashboardData?.recommended_actions?.length > 0 ? (
+              dashboardData.recommended_actions.map((action: any, i: number) => {
+                const isWrench = action.icon === "Wrench";
+                const iconBg = isWrench ? "bg-amber-100 text-amber-600" : "bg-blue-100 text-blue-600";
+                const IconComp = isWrench ? Wrench : Lightbulb;
+                return (
                   <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconBg}`}
+                    key={action.id}
+                    className="flex items-center gap-4 rounded-lg border border-zinc-50 p-3"
                   >
-                    <IconComp className="h-4 w-4" />
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconBg}`}
+                    >
+                      <IconComp className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-zinc-800">
+                        {action.title}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {action.description}
+                      </p>
+                    </div>
+                    <button onClick={(e) => { e.currentTarget.textContent = "Scheduled"; e.currentTarget.classList.add("bg-green-50", "text-green-600", "border-green-200"); e.currentTarget.disabled = true; }} className="shrink-0 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50">
+                      {action.actionLabel}
+                    </button>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-zinc-800">
-                      {action.title}
-                    </p>
-                    <p className="text-xs text-zinc-500">
-                      {action.description}
-                    </p>
-                  </div>
-                  <button className="shrink-0 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50">
-                    {action.actionLabel}
-                  </button>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="py-4 text-center text-zinc-400">
+                No recommended actions
+              </div>
+            )}
           </div>
         </div>
 
@@ -563,44 +630,50 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-zinc-800">
               Maintenance Calendar
             </h2>
-            <button className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:underline">
+            <Link href="/maintenance" className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:underline">
               View All <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            </Link>
           </div>
           <div className="mt-4 space-y-3">
-            {calendarItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 rounded-lg border border-zinc-50 p-3"
-              >
-                {/* Date box */}
-                <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-50">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    {item.month}
-                  </span>
-                  <span className="text-lg font-bold leading-none text-zinc-800">
-                    {item.day}
-                  </span>
-                </div>
-                {/* Details */}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-zinc-800">
-                    {item.title}
-                  </p>
-                  <p className="text-xs text-zinc-500">{item.description}</p>
-                </div>
-                {/* Tag */}
-                <span
-                  className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${
-                    item.tag === "Today"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-emerald-100 text-emerald-700"
-                  }`}
+            {dashboardData?.calendar_items?.length > 0 ? (
+              dashboardData.calendar_items.map((item: any) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-4 rounded-lg border border-zinc-50 p-3"
                 >
-                  {item.tag}
-                </span>
+                  {/* Date box */}
+                  <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-50">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                      {item.date.split(" ")[1]}
+                    </span>
+                    <span className="text-lg font-bold leading-none text-zinc-800">
+                      {item.date.split(" ")[0]}
+                    </span>
+                  </div>
+                  {/* Details */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-zinc-800">
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-zinc-500">{item.type}</p>
+                  </div>
+                  {/* Tag */}
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${
+                      item.status === "Scheduled"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="py-4 text-center text-zinc-400">
+                No calendar items
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

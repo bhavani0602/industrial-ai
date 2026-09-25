@@ -1,8 +1,12 @@
 "use client";
 
 import { Menu, Search, Bell } from "lucide-react";
+import { useUser } from "../context/UserContext";
 
 export default function TopBar() {
+  const { profileName, avatarUrl } = useUser();
+  const initials = profileName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-IN", {
     weekday: "short",
@@ -49,12 +53,16 @@ export default function TopBar() {
 
         {/* User Profile */}
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-xs font-bold text-white">
-            BS
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-xs font-bold text-white overflow-hidden relative">
+            {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="object-cover w-full h-full" />
+              ) : (
+                initials
+              )}
           </div>
           <div className="hidden lg:block">
             <p className="text-sm font-semibold text-zinc-800">
-              Bhavani S
+              {profileName}
             </p>
             <p className="text-[11px] text-zinc-500">Operations Team</p>
           </div>
