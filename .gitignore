@@ -11,3 +11,10 @@ wheels/
 
 # Environment variables
 .env
+
+# RAG API secrets
+.env
+**/.env
+
+# Generated RAG vector database
+rag/ragbot_app_bundle*/chroma_db/
