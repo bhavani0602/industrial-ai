@@ -501,6 +501,3 @@ Avoid committing credentials, unnecessary generated files, local database conten
 
 ---
 
-## License
-
-A license has not yet been specified. Add a suitable license after the project team agrees on the terms under which the source code may be used, modified, and distributed.
