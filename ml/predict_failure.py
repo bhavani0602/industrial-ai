@@ -98,6 +98,6 @@ if __name__ == "__main__":
     print(f"Risk Level: {sample['risk_level']}")
     print(f"Machine Health: {sample['machine_health']}")
 
-    store_prediction(result, path="data/predictions_output.csv")
+    store_prediction(result, path="../data/predictions_output.csv")
 
-    save_model(model, path="data/failure_model.pkl")
+    save_model(model, path="../data/failure_model.pkl")

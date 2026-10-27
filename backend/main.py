@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.api import machines, sensors, anomalies, predictions, maintenance, recommendations, dashboard
+from backend.api import machines, sensors, anomalies, predictions, maintenance, recommendations, dashboard, predict
 
 app = FastAPI(title="Industrial AI Maintenance System - Complete API")
 
@@ -18,6 +18,7 @@ app.include_router(sensors.router)
 # Newly Added Feature Endpoints
 app.include_router(anomalies.router)
 app.include_router(predictions.router)
+app.include_router(predict.router)
 app.include_router(maintenance.router)
 app.include_router(recommendations.router)
 app.include_router(dashboard.router, prefix="/api/dashboard")

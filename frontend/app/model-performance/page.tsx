@@ -17,10 +17,10 @@ export default function ModelPerformancePage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Active Model", value: "Random Forest v2.1", icon: BrainCircuit, color: "text-purple-600", bg: "bg-purple-100" },
-          { label: "Overall Accuracy", value: "94.2%", icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-100" },
-          { label: "Precision", value: "91.8%", icon: BarChart, color: "text-blue-600", bg: "bg-blue-100" },
-          { label: "Recall (Sensitivity)", value: "89.5%", icon: Activity, color: "text-amber-600", bg: "bg-amber-100" },
+          { label: "Active Model", value: "Random Forest (200 trees)", icon: BrainCircuit, color: "text-purple-600", bg: "bg-purple-100" },
+          { label: "Overall Accuracy", value: "98.8%", icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-100" },
+          { label: "Precision (Failure)", value: "93.9%", icon: BarChart, color: "text-blue-600", bg: "bg-blue-100" },
+          { label: "Recall (Failure)", value: "67.6%", icon: Activity, color: "text-amber-600", bg: "bg-amber-100" },
         ].map((stat, i) => (
           <div key={i} className="rounded-xl border border-zinc-100 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-3">

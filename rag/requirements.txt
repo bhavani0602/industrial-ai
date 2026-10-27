@@ -1,0 +1,9 @@
+streamlit
+pymupdf
+pytesseract
+sentence-transformers
+chromadb>=1.5,<2
+openai
+pillow
+pandas
+tqdm

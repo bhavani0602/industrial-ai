@@ -24,8 +24,7 @@ export default function TopBar() {
     <header className="flex h-[60px] items-center justify-between border-b border-zinc-200 bg-white px-6">
       {/* Left */}
       <div className="flex items-center gap-4">
-        <button className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100">
-          <Menu className="h-5 w-5" />
+        <button suppressHydrationWarning className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100">          <Menu className="h-5 w-5" />
         </button>
         <div className="relative hidden sm:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />

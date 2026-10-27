@@ -13,6 +13,7 @@ import {
   Database,
   Activity,
   Settings,
+  MessageSquare,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +22,8 @@ const navItems = [
   { href: "/anomaly-detection", label: "Anomaly Detection", icon: Zap },
   { href: "/failure-prediction", label: "Failure Prediction", icon: Target },
   { href: "/alerts", label: "Alerts & Notifications", icon: Bell, badge: 3 },
+    { href: "/predict", label: "Predict a Machine", icon: Zap },
+      { href: "/assistant", label: "Maintenance Assistant", icon: MessageSquare },
   { href: "/maintenance", label: "Maintenance", icon: Wrench },
   { href: "/reports", label: "Reports", icon: FileBarChart },
   { href: "/data-explorer", label: "Data Explorer", icon: Database },

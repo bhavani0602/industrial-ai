@@ -11,7 +11,8 @@ if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set. Please check your .env file.")
 
 # SQLAlchemy engine
-engine = create_engine(DATABASE_URL)
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
 # Sessionmaker bound to this engine
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

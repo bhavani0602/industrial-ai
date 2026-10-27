@@ -50,6 +50,48 @@ const severityConfig: Record<string, { bg: string; icon: typeof AlertCircle }> =
 
 // ── Sensor chart tabs ────────────────────────────────────────────
 const sensorTabs = ["Vibration", "Temperature", "Pressure", "Flow Rate"];
+const demoDashboardData = {
+  stats: {
+    total_machines: 6,
+    active_anomalies: 3,
+    predicted_failures: 2,
+    uptime_percentage: 96.4,
+  },
+  health_status: { healthy: 3, warning: 2, critical: 1, offline: 0 },
+  predicted_failures_list: [
+    { id: 1, equipment: "Press-03", failureProbability: 85, predictedIn: "2 days", risk: "High" },
+    { id: 2, equipment: "Drill-05", failureProbability: 55, predictedIn: "6 days", risk: "Medium" },
+  ],
+  recent_alerts: [
+    { id: 1, severity: "critical", message: "Press-03: Process temperature exceeded safe threshold by 12°C", time_ago: "12 min ago" },
+    { id: 2, severity: "warning", message: "Drill-05: Tool wear reached critical level at 215 min", time_ago: "48 min ago" },
+    { id: 3, severity: "info", message: "Lathe-02: Power consumption spike detected — 9200W sustained", time_ago: "1 hr ago" },
+  ],
+  sensor_data: Array.from({ length: 12 }, (_, i) => ({
+    time: `${String(i * 2).padStart(2, "0")}:00`,
+    Vibration: +(2.5 + Math.random() * 1.5).toFixed(2),
+    Temperature: +(295 + Math.random() * 15).toFixed(1),
+    Pressure: +(38 + Math.random() * 10).toFixed(1),
+    "Flow Rate": +(45 + Math.random() * 15).toFixed(1),
+  })),
+  recommended_actions: [
+    { id: 1, icon: "Wrench", title: "Inspect Press-03 bearing assembly", description: "High failure probability detected — schedule inspection within 48 hours", actionLabel: "Schedule" },
+    { id: 2, icon: "Lightbulb", title: "Review Drill-05 tool replacement cycle", description: "Tool wear trending above normal — consider earlier replacement", actionLabel: "Schedule" },
+  ],
+  calendar_items: [
+    { id: 1, date: "24 Oct", title: "Press-03 Bearing Replacement", type: "Preventive Maintenance", status: "Scheduled" },
+    { id: 2, date: "27 Oct", title: "Drill-05 Tool Change", type: "Preventive Maintenance", status: "Scheduled" },
+  ],
+};
+
+const demoMachines = [
+  { id: 1, machine_name: "CNC-Mill-01" },
+  { id: 2, machine_name: "Lathe-02" },
+  { id: 3, machine_name: "Press-03" },
+  { id: 4, machine_name: "Grinder-04" },
+  { id: 5, machine_name: "Drill-05" },
+  { id: 6, machine_name: "Welder-06" },
+];
 
 export default function DashboardPage() {
   const [activeSensorTab, setActiveSensorTab] = useState("Vibration");
@@ -62,16 +104,19 @@ export default function DashboardPage() {
       fetch(`http://127.0.0.1:8000/api/dashboard/summary?machine_id=${selectedMachine}`)
         .then((res) => res.json())
         .then((data) => setDashboardData(data))
-        .catch((err) => console.error("Error fetching dashboard data:", err));
+        .catch(() => setDashboardData((prev: any) => prev ?? demoDashboardData));
 
-      fetch("http://127.0.0.1:8000/api/machines?limit=10")
+            fetch("http://127.0.0.1:8000/api/machines?limit=10&risky_first=true")
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) {
             setDropdownMachines(data);
+            setSelectedMachine((cur) =>
+              data.some((m: any) => m.id === cur) ? cur : (data[0]?.id ?? cur)
+            );
           }
         })
-        .catch((err) => console.error("Error fetching machines:", err));
+        .catch(() => setDropdownMachines((prev: any[]) => (prev.length > 0 ? prev : demoMachines)));
     };
 
     fetchData(); // Fetch immediately
@@ -128,13 +173,17 @@ export default function DashboardPage() {
 
       {/* ─── KPI Stat Cards ─────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+                        <StatCard
           title="Total Equipment"
           value={dashboardData ? dashboardData.stats.total_machines : "..."}
           icon={Settings}
-          trendValue="↑ 12%"
+          trendValue={
+            dashboardData && dashboardData.stats.total_machines > 0
+              ? `${(((dashboardData.stats.total_machines - dashboardData.health_status.offline) / dashboardData.stats.total_machines) * 100).toFixed(0)}% active`
+              : undefined
+          }
           trendPositive
-          subtitle="vs last month"
+          subtitle="machines in the dataset"
           iconBg="bg-blue-100"
           iconColor="text-blue-600"
         />
@@ -142,9 +191,13 @@ export default function DashboardPage() {
           title="Active Anomalies"
           value={dashboardData ? dashboardData.stats.active_anomalies : "..."}
           icon={AlertTriangle}
-          trendValue="↑ 150%"
+          trendValue={
+            dashboardData && dashboardData.stats.total_machines > 0
+              ? `${((dashboardData.stats.active_anomalies / dashboardData.stats.total_machines) * 100).toFixed(1)}% failure rate`
+              : undefined
+          }
           trendPositive={false}
-          subtitle="vs last week"
+          subtitle="recorded failures in the dataset"
           iconBg="bg-red-50"
           iconColor="text-red-500"
         />
@@ -152,9 +205,13 @@ export default function DashboardPage() {
           title="Predicted Failures"
           value={dashboardData ? dashboardData.stats.predicted_failures : "..."}
           icon={ShieldAlert}
-          trendValue="↑ 50%"
+          trendValue={
+            dashboardData && dashboardData.stats.total_machines > 0
+              ? `${((dashboardData.stats.predicted_failures / dashboardData.stats.total_machines) * 100).toFixed(1)}% of machines`
+              : undefined
+          }
           trendPositive={false}
-          subtitle="in next 7 days"
+          subtitle="high-risk machines (ML model)"
           iconBg="bg-purple-50"
           iconColor="text-purple-600"
         />
@@ -162,9 +219,7 @@ export default function DashboardPage() {
           title="Uptime"
           value={dashboardData ? `${dashboardData.stats.uptime_percentage}%` : "..."}
           icon={CheckCircle}
-          trendValue="↑ 2.4%"
-          trendPositive
-          subtitle="vs last month"
+          subtitle="machines with no recorded failure"
           iconBg="bg-emerald-50"
           iconColor="text-emerald-600"
         />
@@ -462,7 +517,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4">
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={dashboardData?.sensor_data || []}>
+              <LineChart data={dashboardData?.failure_trend|| []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis
                   dataKey="date"

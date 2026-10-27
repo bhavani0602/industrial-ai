@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend import schemas
 from database.session import get_db
-from database.models import Machine
+from database.models import Machine, Prediction
 
 router = APIRouter(prefix="/api/machines", tags=["machines"])
 
@@ -15,7 +15,17 @@ def create_machine(machine: schemas.MachineCreate, db: Session = Depends(get_db)
     return new_machine
 
 @router.get("/", response_model=list[schemas.MachineOut])
-def list_machines(skip: int = 0, limit: int = 10000, db: Session = Depends(get_db)):
+def list_machines(skip: int = 0, limit: int = 10000, risky_first: bool = False, db: Session = Depends(get_db)):
+    if risky_first:
+        # machines with the highest ML failure probability come first
+        return (
+            db.query(Machine)
+            .join(Prediction, Prediction.machine_id == Machine.id)
+            .order_by(Prediction.failure_probability.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
     return db.query(Machine).offset(skip).limit(limit).all()
 
 @router.get("/{machine_id}", response_model=schemas.MachineOut)

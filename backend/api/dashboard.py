@@ -1,47 +1,136 @@
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from database.models import Anomaly, Machine, Prediction, SensorReading
 from database.session import get_db
-from database.models import Machine, Anomaly, Prediction, Recommendation, SensorReading, MaintenanceRecord
 
 router = APIRouter()
 
+# Rule-based severity per failure type (used for the Recent Alerts icons)
+SEVERITY_BY_TYPE = {
+    "Power Failure (PWF)": "critical",
+    "Overstrain Failure (OSF)": "critical",
+    "Heat Dissipation Failure (HDF)": "critical",
+    "Tool Wear Failure (TWF)": "warning",
+    "Random Failures (RNF)": "info",
+}
+
+
+def urgency_window(prob: float) -> str:
+    """Rule-based urgency label derived from the model's probability (not a time forecast)."""
+    if prob >= 0.9:
+        return "Immediate"
+    if prob >= 0.7:
+        return "Within 2 days"
+    if prob >= 0.5:
+        return "Within 5 days"
+    return "Within 7 days"
+
+
+def spread(items, n):
+    """Pick n items evenly spread across a list (so the list shows a range of risk levels)."""
+    if len(items) <= n:
+        return items
+    step = (len(items) - 1) / (n - 1)
+    return [items[round(i * step)] for i in range(n)]
+
+
 @router.get("/summary")
 def get_dashboard_summary(machine_id: int = 1, db: Session = Depends(get_db)):
-    # Machine Stats
+    # ---- Machine stats ----------------------------------------------------
     total_machines = db.query(Machine).count()
     active_machines = db.query(Machine).filter(Machine.status == "Active").count()
     inactive_machines = total_machines - active_machines
 
-    # Health Distribution
-    healthy_count = total_machines - (active_machines // 4)  # mock logic based on total
-    warning_count = active_machines // 5
-    critical_count = total_machines - healthy_count - warning_count
-    if critical_count < 0: critical_count = 0
+    # ---- Health distribution (from the ML model's risk levels) -------------
+    healthy_count = db.query(Prediction).filter(Prediction.risk_level == "Low").count()
+    warning_count = db.query(Prediction).filter(Prediction.risk_level == "Medium").count()
+    critical_count = db.query(Prediction).filter(Prediction.risk_level == "High").count()
 
-    # Anomalies
+    # ---- Anomalies / predictions -------------------------------------------
     active_anomalies = db.query(Anomaly).filter(Anomaly.status == "Unresolved").count()
+    predicted_failures = critical_count
 
-    # Predictions
-    predicted_failures = db.query(Prediction).filter(Prediction.risk_level == "High").count()
+    # ---- AI predicted failures: a spread across Medium/High risk -----------
+    risky = (
+        db.query(Prediction, Machine)
+        .join(Machine, Machine.id == Prediction.machine_id)
+        .filter(Prediction.failure_probability >= 0.3)
+        .order_by(Prediction.failure_probability.desc())
+        .all()
+    )
+    picked = spread(risky, 5)
 
-    # Recent Alerts (using anomalies as alerts)
-    recent_alerts = db.query(Anomaly).order_by(Anomaly.detected_at.desc()).limit(5).all()
+    # ---- Recent alerts: latest recorded failure of each failure type -------
+    alert_rows = []
+    types = [t[0] for t in db.query(Anomaly.anomaly_type).distinct().all()]
+    for t in types:
+        row = (
+            db.query(Anomaly, Machine)
+            .join(Machine, Machine.id == Anomaly.machine_id)
+            .filter(Anomaly.anomaly_type == t)
+            .order_by(Anomaly.detected_at.desc())
+            .first()
+        )
+        if row:
+            alert_rows.append(row)
+    order = {"critical": 0, "warning": 1, "info": 2}
+    alert_rows.sort(key=lambda r: order.get(SEVERITY_BY_TYPE.get(r.Anomaly.anomaly_type, "info"), 2))
 
-    # Predictions List
-    predicted_failures_list = db.query(Prediction, Machine).join(Machine).order_by(Prediction.failure_probability.desc()).limit(5).all()
+    # ---- Sensor window: 24 consecutive readings ending at the selected machine
+    anchor = db.query(SensorReading).filter(SensorReading.machine_id == machine_id).first()
+    window = []
+    if anchor:
+        start_id = max(1, anchor.id - 12)  # selected machine sits in the middle of the window
+        window = (
+            db.query(SensorReading)
+            .filter(SensorReading.id >= start_id, SensorReading.id <= start_id + 23)
+            .order_by(SensorReading.timestamp.asc())
+            .all()
+        )
 
-    # Sensor Data (for selected machine)
-    sensor_data = db.query(SensorReading).filter(SensorReading.machine_id == machine_id).order_by(SensorReading.timestamp.asc()).limit(24).all()
+    machine_ids = [s.machine_id for s in window]
+    probs = {}
+    if machine_ids:
+        probs = {
+            p.machine_id: p.failure_probability
+            for p in db.query(Prediction).filter(Prediction.machine_id.in_(machine_ids)).all()
+        }
 
-    # Recommended Actions
-    actions = db.query(Recommendation).order_by(Recommendation.created_at.desc()).limit(4).all()
+    # ---- Recommended actions + suggested maintenance (derived from predictions)
+    actions = []
+    for i, (p, m) in enumerate(picked[:3]):
+        pct = int(p.failure_probability * 100)
+        actions.append({
+            "id": i + 1,
+            "title": f"Inspect machine {m.machine_name} (failure risk {pct}%)",
+            "description": f"{p.risk_level} risk from the ML model. Suggested: {urgency_window(p.failure_probability).lower()}.",
+            "actionLabel": "Schedule",
+            "icon": "Wrench" if i % 2 == 0 else "Lightbulb",
+        })
 
-    # Maintenance Records (Calendar)
-    calendar_records = db.query(MaintenanceRecord, Machine).join(Machine).order_by(MaintenanceRecord.maintenance_date.asc()).limit(4).all()
+    today = datetime.utcnow()
+    offsets = [1, 2, 4, 6]
+    calendar = []
+    for i, (p, m) in enumerate(picked[:4]):
+        calendar.append({
+            "id": i + 1,
+            "date": (today + timedelta(days=offsets[i])).strftime("%d %b"),
+            "title": f"{m.machine_name} - Inspection",
+            "status": "Suggested",
+            "type": f"{p.risk_level} risk",
+        })
 
-    # Anomalies by Equipment (for the bar chart)
-    anomalies_group = db.query(Machine.machine_name, func.count(Anomaly.id).label("count")).join(Anomaly).group_by(Machine.machine_name).limit(5).all()
+    # ---- Anomalies by equipment type ---------------------------------------
+    anomalies_group = (
+        db.query(Machine.machine_type, func.count(Anomaly.id).label("count"))
+        .join(Anomaly, Anomaly.machine_id == Machine.id)
+        .group_by(Machine.machine_type)
+        .all()
+    )
     colors = ["#3b82f6", "#f59e0b", "#ef4444", "#10b981", "#8b5cf6"]
 
     return {
@@ -49,39 +138,33 @@ def get_dashboard_summary(machine_id: int = 1, db: Session = Depends(get_db)):
             "total_machines": total_machines,
             "active_anomalies": active_anomalies,
             "predicted_failures": predicted_failures,
-            "uptime_percentage": 98.6
+            "uptime_percentage": round(100 * (1 - active_anomalies / total_machines), 1) if total_machines else 0,
         },
         "health_status": {
             "healthy": healthy_count,
             "warning": warning_count,
             "critical": critical_count,
-            "offline": inactive_machines
+            "offline": inactive_machines,
         },
         "recent_alerts": [
             {
-                "id": a.id,
-                "message": a.anomaly_type + " - " + a.description,
-                "time_ago": "Recently",
-                "severity": "High" if a.anomaly_score > 0.8 else "Medium"
-            } for a in recent_alerts
+                "id": r.Anomaly.id,
+                "message": f"{r.Anomaly.anomaly_type} - {r.Machine.machine_name}",
+                "time_ago": r.Anomaly.detected_at.strftime("%d %b, %H:%M"),
+                "severity": SEVERITY_BY_TYPE.get(r.Anomaly.anomaly_type, "info"),
+            }
+            for r in alert_rows
         ],
-        "recommended_actions": [
-            {
-                "id": r.id,
-                "title": r.recommendation,
-                "description": f"Priority: {r.priority}",
-                "actionLabel": "Schedule",
-                "icon": "Wrench"
-            } for r in actions
-        ],
+        "recommended_actions": actions,
         "predicted_failures_list": [
             {
-                "id": p.Prediction.id,
-                "equipment": p.Machine.machine_name,
-                "failureProbability": int(p.Prediction.failure_probability * 100),
-                "predictedIn": "Soon",
-                "risk": p.Prediction.risk_level
-            } for p in predicted_failures_list
+                "id": p.id,
+                "equipment": m.machine_name,
+                "failureProbability": int(p.failure_probability * 100),
+                "predictedIn": urgency_window(p.failure_probability),
+                "risk": p.risk_level,
+            }
+            for p, m in picked
         ],
         "sensor_data": [
             {
@@ -89,23 +172,20 @@ def get_dashboard_summary(machine_id: int = 1, db: Session = Depends(get_db)):
                 "Vibration": round((s.rpm / 1500) * 15, 2),
                 "Temperature": round(s.air_temperature, 2),
                 "Pressure": round(s.torque, 2),
-                "Flow Rate": round((s.power_consumption / 3000) * 50, 2)
-            } for s in sensor_data
+                "Flow Rate": round((s.power_consumption / 3000) * 50, 2),
+            }
+            for s in window
         ],
-        "calendar_items": [
+        "failure_trend": [
             {
-                "id": c.MaintenanceRecord.id,
-                "date": c.MaintenanceRecord.maintenance_date.strftime("%d %b"),
-                "title": f"{c.Machine.machine_name} {c.MaintenanceRecord.description}",
-                "status": c.MaintenanceRecord.status,
-                "type": c.MaintenanceRecord.maintenance_type
-            } for c in calendar_records
+                "date": s.timestamp.strftime("%H:%M"),
+                "probability": round(probs.get(s.machine_id, 0.0) * 100, 1),
+            }
+            for s in window
         ],
+        "calendar_items": calendar,
         "anomalies_by_equipment": [
-            {
-                "name": name,
-                "count": count,
-                "color": colors[i % len(colors)]
-            } for i, (name, count) in enumerate(anomalies_group)
-        ]
+            {"name": f"Type {name}", "count": count, "color": colors[i % len(colors)]}
+            for i, (name, count) in enumerate(anomalies_group)
+        ],
     }
